@@ -11,14 +11,6 @@ from killua.static.constants import L10N_PATH, SOURCE_LANG
 def gen_string_key(string: str) -> str:
     return string.replace(" ", "_").replace(",", "").replace(".", "").replace("-", "_").lower()
 
-class LocaleStr:
-    def __init__(self, *, key: str | None = None, custom_str: str | None = None, translate: bool = True, **kwargs):
-        self.key = key
-        self.custom_str = custom_str
-        self.translate = translate
-        self.extras: dict[str, Any] = kwargs
-
-
 class Translator:
     def __init__(self):
         self._localization_dict: dict[str, dict[str, str]] = {}
@@ -43,23 +35,23 @@ class Translator:
     def _translate_extras(self, extras: dict[str, Any], locale: Locale) -> dict[str, Any]:
         extras_: dict[str, Any] = {}
         for k, v in extras.items():
-            if isinstance(v, LocaleStr):
+            if k == "key":
+                continue
+            if isinstance(v, app_commands.locale_str):
                 extras_[k] = self.translate(v, locale)
-            elif isinstance(v, list) and isinstance(v[0], LocaleStr):
+            elif isinstance(v, list) and isinstance(v[0], app_commands.locale_str):
                 extras_[k] = "/".join([self.translate(i, locale) for i in v])
             else:
                 extras_[k] = v
         return extras_
 
     @staticmethod
-    def _get_string_key(string: LocaleStr) -> str:
-        if string.key is None:
-            if string.custom_str is None:
-                raise ValueError("Either key or custom_str must be provided.")
-            return gen_string_key(string.custom_str)
-        return string.key
+    def _get_string_key(string: app_commands.locale_str) -> str:
+        if string.extras.get("key") is not None:
+            return string.extras.get("key")
+        return gen_string_key(string.message)
 
-    def translate(self, string: LocaleStr | str, locale: Locale):
+    def translate(self, string: app_commands.locale_str | str, locale: Locale):
         if isinstance(string, str):
             return string
         
@@ -68,13 +60,12 @@ class Translator:
         print(f"{PrintColors.OKCYAN}Translating string: {string_key} for locale: {locale}{PrintColors.ENDC}")
 
         source_string = self._localization_dict[SOURCE_LANG].get(string_key)
-
-        if string.translate and source_string is None and string.custom_str is None:
+        if string.extras.get("key") is not None and source_string is None:
             raise ValueError(f"String '{string_key}' not found in source language '{SOURCE_LANG}'.")
 
         translation = self._localization_dict.get(locale.value, {}).get(string_key)
 
-        translation = translation or source_string or string.custom_str or string_key
+        translation = translation or source_string or string.message or string_key
 
         with contextlib.suppress(KeyError):
             translation = translation.format(**extras)
@@ -94,6 +85,6 @@ class AppCommandTranslator(app_commands.Translator):
         print(f"{PrintColors.OKCYAN}Translating app command string: {string.extras.get('key')} / string {string.message} for locale: {locale}{PrintColors.ENDC}")
         if (key := string.extras.get("key")) is None:
             return string.message
-        return translator.translate(LocaleStr(key=key), locale)
+        return translator.translate(string, locale)
 
 translator = Translator()
