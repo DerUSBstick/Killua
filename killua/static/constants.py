@@ -1,6 +1,7 @@
 import json
 import io, os
 import discord
+from pathlib import Path
 from pymongo import AsyncMongoClient
 from pymongo.asynchronous.collection import AsyncCollection
 from typing import Any, Callable, TypeVar, Generic, Union, Dict, List, Tuple
@@ -27,6 +28,9 @@ MAX_VOTES_DISPLAYED = 5
 CARDS_URL = "https://api.killua.dev/cards.json?public="
 
 API_ROUTES = ["/diagnostics", "/commands", "/stats", "/image", "/vote"]
+
+SOURCE_LANG = "en-US"
+L10N_PATH = Path("killua/l10n")
 
 T = TypeVar("T")
 

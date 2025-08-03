@@ -17,6 +17,7 @@ from functools import partial
 from yaml import full_load
 from typing import Coroutine, Union, Dict, List, Optional, Tuple, cast
 
+from .utils.l10n import AppCommandTranslator
 from .static.enums import Category
 from .utils.interactions import Modal
 from .static.constants import TIPS, LOOTBOXES, DB
@@ -104,6 +105,7 @@ class BaseBot(commands.AutoShardedBot):
 
         for cog in self.cogs:
             await self.clone_top_level_cog(self.get_cog(cog))
+        await self.tree.set_translator(AppCommandTranslator())
         await self.tree.sync()
 
         self.cached_skus = await self.fetch_skus()
